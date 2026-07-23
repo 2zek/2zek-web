@@ -7,21 +7,22 @@ export async function POST(req: Request) {
 
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
     const chatId = process.env.TELEGRAM_CHAT_ID;
+    const threadId = process.env.TELEGRAM_THREAD_ID;
 
     if (!botToken || !chatId) {
-      console.error('Telegram keys are missing');
+      console.error('Telegram keys are missing in environment variables');
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
 
     const text = `
-🚀 *Yeni Proje Talebi*
+*New Project Request*
 
-👤 *Ad Soyad:* ${name}
-📧 *E-posta:* ${email}
-🏢 *Şirket/Proje:* ${company}
-🛠 *Tip:* ${type}
+*Name:* ${name}
+*Email:* ${email}
+*Company/Project:* ${company}
+*Type:* ${type}
 
-📝 *Mesaj:*
+*Message:*
 ${message}
     `;
 
@@ -32,17 +33,20 @@ ${message}
       },
       body: JSON.stringify({
         chat_id: chatId,
+        message_thread_id: threadId ? parseInt(threadId) : undefined,
         text: text,
         parse_mode: 'Markdown',
       }),
     });
 
     if (!response.ok) {
-      throw new Error('Telegram API error');
+      const errorData = await response.json();
+      console.error('Telegram API error details:', errorData);
+      throw new Error(`Telegram API error: ${errorData.description || response.statusText}`);
     }
 
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Contact API error:', error);
     return NextResponse.json({ error: 'Failed to send message' }, { status: 500 });
   }
